@@ -104,6 +104,8 @@ async def update_pack_name_in_db(user_id):
             data_query = (random_packname, user_id)
             await cur.execute(query, data_query)
             await mydb.commit()
+            print(f"[x] Had to update a sticker set link for user {user_id}. The old sticker pack was likely deleted")
+
             return random_packname
         except Error as e:
             print(f'[!] There was an error in getting cursor: {e}')

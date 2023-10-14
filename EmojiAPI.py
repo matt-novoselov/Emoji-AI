@@ -1,12 +1,10 @@
 import aiohttp
 import asyncio
-from os import getenv
 import dotenv
 from PIL import Image
 from io import BytesIO
 
 dotenv.load_dotenv()
-token = getenv('EMOJI_TOKEN')
 url = 'https://emojis.sh/'
 headers = {'next-action': 'b27e61a1c2593d4e15cff5b93551619145cf5d06'}
 connector = aiohttp.TCPConnector(ssl=False)
@@ -15,7 +13,7 @@ connector = aiohttp.TCPConnector(ssl=False)
 async def post_prompt(prompt: str):
     data = {
         '1_prompt': prompt,
-        '1_token': token,
+        '1_token': await get_token(),
         '0': '["$undefined","$K1"]',
     }
 
@@ -41,7 +39,7 @@ async def check_image_status(image_url):
                 if data.get("emoji").get("isFlagged"):
                     raise Exception("NSFW Content detected")
             count += 1
-            if count >= 5:
+            if count >= 8:
                 raise Exception("It took too long to get noBackgroundUrl")
             await asyncio.sleep(5)  # Adjust the sleep duration based on your requirements
 
@@ -60,3 +58,17 @@ async def transform_image(input_image_bytes, output_size=(100, 100)):
     resized_image.save(output_buffer, format="PNG")
     output_buffer.seek(0)
     return output_buffer
+
+
+async def get_token():
+    url_token = 'https://emojis.sh/api/token'
+
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with session.get(url_token) as response:
+            response_json = await response.json()
+            token_value = response_json.get("token", None)  # Extract the value of the "token" field
+
+            if token_value is not None:
+                return token_value
+            else:
+                raise Exception("Unable to get a token")

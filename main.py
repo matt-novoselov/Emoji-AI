@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import BufferedInputFile, ContentType
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardMarkup
 import asyncio
 from os import getenv
 import dotenv
@@ -17,20 +17,29 @@ dp = Dispatcher()
 
 Processing_users = []
 Allowed_types = [ContentType.TEXT]
+keyboard_builder = ReplyKeyboardMarkup(keyboard=[[types.KeyboardButton(text="🛠️ Support")]], resize_keyboard=True,
+                                       input_field_placeholder="")
+bot_username = ""
+
+
+@dp.message(F.text == "🛠️ Support")
+async def command_start_handler(message: types.Message) -> None:
+    await message.answer("🛠️ Contact our support here: @NoveSupportBot")
 
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message) -> None:
     await message.answer(f"Hi, <b>{message.from_user.full_name}</b> 👋\n\n"
-                         "Send me a description of your emoji and I will generate it!")
+                         "Send me a description of your emoji and I will generate it!",
+                         reply_markup=keyboard_builder)
 
 
 async def create_new_pack_and_put_emoji(user_id, pack_link_from_database, full_name, bytes_image):
     try:
         await bot.create_new_sticker_set(
             user_id=user_id,
-            name=f"{pack_link_from_database}_by_EmojiAI_bot",
-            title=f"{full_name}’s emojis by @EmojiAI_bot",
+            name=f"{pack_link_from_database}_by_{bot_username}",
+            title=f"{full_name}’s emojis by @{bot_username}",
             stickers=[aiogram.types.input_sticker.InputSticker(emoji_list=["🖼️"],
                                                                sticker=BufferedInputFile(bytes_image, ""))],
             sticker_format="static",
@@ -44,7 +53,7 @@ async def add_new_emoji_to_pack(user_id, pack_link_from_database, bytes_image):
     try:
         await bot.add_sticker_to_set(
             user_id=user_id,
-            name=f"{pack_link_from_database}_by_EmojiAI_bot",
+            name=f"{pack_link_from_database}_by_{bot_username}",
             sticker=aiogram.types.input_sticker.InputSticker(
                 emoji_list=["🖼️"],
                 sticker=BufferedInputFile(bytes_image, "")
@@ -60,7 +69,7 @@ async def add_emoji_to_pack(user_id, full_name, final_img):
     # Add sticker to existing pack
     if pack_was_created:  # Check pack is not deleted by user
         if await set_exists(pack_username):  # Pack was not touched
-            sticker_set = await bot.get_sticker_set(f"{pack_username}_by_EmojiAI_bot")
+            sticker_set = await bot.get_sticker_set(f"{pack_username}_by_{bot_username}")
             amount_of_stickers = len(sticker_set.stickers)
             if amount_of_stickers >= 200:
                 pack_username = await mysql_database.update_pack_name_in_db(user_id)
@@ -105,11 +114,11 @@ async def process_text(message: types.Message) -> None:
 
         await progress_message.delete()
         builder = InlineKeyboardBuilder()
-        builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_EmojiAI_bot")
+        builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_{bot_username}")
         await message.reply("<b>Emoji generated</b> ✅", reply_markup=builder.as_markup())
 
         print(f"[v] User {message.from_user.id} successfully generated {prompt} emoji. "
-              f"Link: https://t.me/addemoji/{pack_username}_by_EmojiAI_bot")
+              f"Link: https://t.me/addemoji/{pack_username}_by_{bot_username}")
 
     except Exception as e:
         await progress_message.delete()
@@ -150,7 +159,7 @@ async def remove_user_from_processing(user_id):
 
 async def set_exists(sticker_set):
     try:
-        await bot.get_sticker_set(f"{sticker_set}_by_EmojiAI_bot")
+        await bot.get_sticker_set(f"{sticker_set}_by_{bot_username}")
         return True
     except Exception:  # The pack was deleted
         pass
@@ -158,6 +167,9 @@ async def set_exists(sticker_set):
 
 
 async def main() -> None:
+    global bot_username
+    info = await bot.get_me()
+    bot_username = info.username
     await dp.start_polling(bot)
 
 
