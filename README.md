@@ -1,4 +1,4 @@
-# Accent bot
+# Emoji AI bot
 
 Source code of Aiogram 3.x based telegram bot that can generate an emoji based on the description and add it to the pack.
 
