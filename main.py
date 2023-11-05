@@ -7,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardMarkup
 import asyncio
 from os import getenv
 import dotenv
-import EmojiAPI
+import EmojiAPI2
 import mysql_database
 
 dotenv.load_dotenv()
@@ -105,10 +105,10 @@ async def process_text(message: types.Message) -> None:
     try:
         await add_user_to_processing(message.from_user.id)
 
-        full_response = await EmojiAPI.post_prompt(prompt)
-        no_background_url = await EmojiAPI.check_image_status(full_response)
-        input_image_bytes = await EmojiAPI.download_image(no_background_url)
-        transformed_image_bytes = await EmojiAPI.transform_image(input_image_bytes)
+        full_response = await EmojiAPI2.generate_emoji(prompt)
+        no_background_url = await EmojiAPI2.remove_background(full_response)
+        downloaded_image_bytes = await EmojiAPI2.download_image(no_background_url)
+        transformed_image_bytes = await EmojiAPI2.resize_image(downloaded_image_bytes)
         pack_username = await add_emoji_to_pack(message.from_user.id, message.from_user.full_name,
                                                 transformed_image_bytes)
 
