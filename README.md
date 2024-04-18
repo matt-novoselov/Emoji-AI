@@ -4,7 +4,7 @@ Source code of Aiogram 3.x based telegram bot that can generate an emoji based o
 
 ![](https://github.com/matt-novoselov/emoji-ai/blob/e70f3b548d9737f4bbf0a9793d15eec86216965c/EmojiAIBot.png)
 
-[![Telegram Bot](https://raw.githubusercontent.com/matt-novoselov/SystemFiles/main/telegram_button.svg)](https://t.me/EmojiAi_bot)
+[![Telegram Bot](https://raw.githubusercontent.com/matt-novoselov/matt-novoselov/main/telegram_button.svg)](https://t.me/EmojiAi_bot)
 
 ## Credits
 - [sdxl-emoji](https://replicate.com/fofr/sdxl-emoji) - fine tuned SDXL based on Apple's emojis by [@fofrAI](https://twitter.com/fofrAI)
