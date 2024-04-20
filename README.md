@@ -2,7 +2,7 @@
 
 Source code of Aiogram 3.x based telegram bot that can generate an emoji based on the description and add it to the pack.
 
-![](https://github.com/matt-novoselov/emoji-ai/blob/b83feff7bc7df911d7e384056ba70e283c64f82a/EmojiAIBot.png)
+![](https://github.com/matt-novoselov/emoji-ai/blob/5920e7a09b1c859ffbdfa1547ec59ccecf5dd327/EmojiAIBot.png)
 
 [![Telegram Bot](https://github.com/matt-novoselov/matt-novoselov/blob/4fddb3cb2c7e952d38b8b09037040af183556a77/Files/telegram_button.svg)](https://t.me/EmojiAi_bot)
 
