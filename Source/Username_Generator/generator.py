@@ -1,13 +1,13 @@
 import random
 
-# read word lists
+# Load word lists
 with open("Username_Generator/nouns.txt", 'r') as infile:
     nouns = infile.read().strip(' \n').split('\n')
 with open("Username_Generator/adjectives.txt", 'r') as infile:
     adjectives = infile.read().strip(' \n').split('\n')
 
 
-# generate usernames
+# Generate usernames
 async def GenerateUsername():
     # construct username
     word1 = random.choice(adjectives)

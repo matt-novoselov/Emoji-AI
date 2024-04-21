@@ -5,12 +5,14 @@ from aiomysql import Error
 from dotenv import load_dotenv
 from Username_Generator import generator
 
-
+# Load secrets from environment
 load_dotenv()
+
 # - - - - - - - - - - #
 loop = asyncio.get_event_loop()
 
 
+# Function to connect to the database with credentials
 async def connect_db():
     try:
         connection = await aiomysql.connect(
@@ -31,6 +33,7 @@ async def connect_db():
         print(f'[!] There was an error in connecting to MySQL Server: {e}')
 
 
+# Function to get database cursor
 async def get_cursor():
     global mydb
     try:
@@ -42,10 +45,10 @@ async def get_cursor():
 
 mydb = loop.run_until_complete(connect_db())
 
-
 # - - - - - - - - - - #
 
 
+# Function to get username and status by Telegram user id
 async def return_pack_username_and_activated_status(user_id):
     async with await get_cursor() as cur:
         try:
@@ -68,6 +71,7 @@ async def return_pack_username_and_activated_status(user_id):
             pass
 
 
+# Add Telegram User ID and created pack link to the database
 async def push_uid_and_pack_name_to_db(user_id, ):
     async with await get_cursor() as cur:
         try:
@@ -83,6 +87,7 @@ async def push_uid_and_pack_name_to_db(user_id, ):
             pass
 
 
+# Get pack name by Telegram User ID
 async def return_pack_name_by_uid(user_id):
     async with await get_cursor() as cur:
         try:
@@ -95,6 +100,7 @@ async def return_pack_name_by_uid(user_id):
             pass
 
 
+# Update pack name by Telegram User ID
 async def update_pack_name_in_db(user_id):
     async with await get_cursor() as cur:
         try:
@@ -112,5 +118,6 @@ async def update_pack_name_in_db(user_id):
             pass
 
 
+# Generate new pack name
 async def generate_new_pack_name():
     return await generator.GenerateUsername()
