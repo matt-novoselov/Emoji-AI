@@ -1,6 +1,6 @@
 # Emoji AI bot
 
-Source code of Aiogram 3.x based Telegram bot that can generate an emoji based on the description and add it to the pack.
+Source code of an Aiogram 3.x-based Telegram bot that can generate an emoji based on the description provided by the user and automatically add it to the sticker pack.
 
 ![](https://github.com/matt-novoselov/Emoji-AI/blob/f8b483a476a40183be642daa3e056477ee7e67d7/EmojiAIBot.png)
 
