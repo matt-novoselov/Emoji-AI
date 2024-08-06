@@ -24,26 +24,15 @@ Processing_users = []
 # Allowed types of content to which the bot should react
 Allowed_types = [ContentType.TEXT]
 
-# Compose the keyboard for the bot
-keyboard_builder = ReplyKeyboardMarkup(keyboard=[[types.KeyboardButton(text="🛠️ Support")]], resize_keyboard=True,
-                                       input_field_placeholder="")
-
 # Variable that stores the username of the bot (automatically assigned on boot)
 bot_username = ""
-
-
-# Get support on keyboard action
-@dp.message(F.text == "🛠️ Support")
-async def command_start_handler(message: types.Message) -> None:
-    await message.answer("🛠️ Contact our support here: @NoveSupportBot")
 
 
 # React on /start message
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message) -> None:
     await message.answer(f"Hi, <b>{message.from_user.full_name}</b> 👋\n\n"
-                         "Send me a description of your emoji and I will generate it!",
-                         reply_markup=keyboard_builder)
+                         "Send me a description of your emoji and I will generate it!")
 
 
 # Function to create a new sticker pack (emoji pack) for given user and put first emoji
