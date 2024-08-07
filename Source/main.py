@@ -1,9 +1,10 @@
 import aiogram.methods
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import BufferedInputFile, ContentType
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.client.bot import DefaultBotProperties
+from aiogram.enums import ParseMode
 import asyncio
 from os import getenv
 import dotenv
@@ -15,7 +16,7 @@ dotenv.load_dotenv()
 
 # Load bot API token
 TOKEN = getenv("TELEGRAM_TOKEN")
-bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
 # Stack of users whose requests are currently being processed
@@ -43,8 +44,13 @@ async def create_new_pack_and_put_emoji(user_id, pack_link_from_database, full_n
             user_id=user_id,
             name=f"{pack_link_from_database}_by_{bot_username}",
             title=f"{full_name}’s emojis by @{bot_username}",
-            stickers=[aiogram.types.input_sticker.InputSticker(emoji_list=["🖼️"],
-                                                               sticker=BufferedInputFile(bytes_image, ""))],
+            stickers=[
+                aiogram.types.input_sticker.InputSticker(
+                    emoji_list=["🖼️"],
+                    sticker=BufferedInputFile(bytes_image, ""),
+                    format="static"
+                )
+            ],
             sticker_format="static",
             sticker_type="custom_emoji",
         )
@@ -61,7 +67,8 @@ async def add_new_emoji_to_pack(user_id, pack_link_from_database, bytes_image):
             name=f"{pack_link_from_database}_by_{bot_username}",
             sticker=aiogram.types.input_sticker.InputSticker(
                 emoji_list=["🖼️"],
-                sticker=BufferedInputFile(bytes_image, "")
+                sticker=BufferedInputFile(bytes_image, ""),
+                format="static"
             ),
         )
     except Exception as e:
