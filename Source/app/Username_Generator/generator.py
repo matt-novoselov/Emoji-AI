@@ -1,9 +1,9 @@
 import random
 
 # Load word lists
-with open("Username_Generator/nouns.txt", 'r') as infile:
+with open("app/Username_Generator/nouns.txt", 'r') as infile:
     nouns = infile.read().strip(' \n').split('\n')
-with open("Username_Generator/adjectives.txt", 'r') as infile:
+with open("app/Username_Generator/adjectives.txt", 'r') as infile:
     adjectives = infile.read().strip(' \n').split('\n')
 
 
