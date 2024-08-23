@@ -2,7 +2,7 @@ from app.config import DB_HOST, DB_PORT, DB_USERNAME, DB_NAME, DB_PASSWORD
 import asyncio
 import aiomysql
 from aiomysql import Error
-from Username_Generator import generator
+from app.Username_Generator import generator
 
 
 # - - - - - - - - - - #
