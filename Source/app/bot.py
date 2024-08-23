@@ -5,18 +5,12 @@ from aiogram.types import BufferedInputFile, ContentType
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
-import asyncio
-from os import getenv
-import dotenv
-import EmojiAPI2
-import mysql_database
+from app.config import TELEGRAM_TOKEN
+import app.EmojiAPI2 as EmojiAPI2
+import app.mysql_database as mysql_database
 
-# Load secrets from environment
-dotenv.load_dotenv()
 
-# Load bot API token
-TOKEN = getenv("TELEGRAM_TOKEN")
-bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(TELEGRAM_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
 # Stack of users whose requests are currently being processed
@@ -24,9 +18,6 @@ Processing_users = []
 
 # Allowed types of content to which the bot should react
 Allowed_types = [ContentType.TEXT]
-
-# Variable that stores the username of the bot (automatically assigned on boot)
-bot_username = ""
 
 
 # React on /start message
@@ -42,8 +33,8 @@ async def create_new_pack_and_put_emoji(user_id, pack_link_from_database, full_n
         # Define and create new sticker pack
         await bot.create_new_sticker_set(
             user_id=user_id,
-            name=f"{pack_link_from_database}_by_{bot_username}",
-            title=f"{full_name}’s emojis by @{bot_username}",
+            name=f"{pack_link_from_database}_by_{await get_username()}",
+            title=f"{full_name}’s emojis by @{await get_username()}",
             stickers=[
                 aiogram.types.input_sticker.InputSticker(
                     emoji_list=["🖼️"],
@@ -64,7 +55,7 @@ async def add_new_emoji_to_pack(user_id, pack_link_from_database, bytes_image):
         # Define and add new sticker to existing set
         await bot.add_sticker_to_set(
             user_id=user_id,
-            name=f"{pack_link_from_database}_by_{bot_username}",
+            name=f"{pack_link_from_database}_by_{await get_username()}",
             sticker=aiogram.types.input_sticker.InputSticker(
                 emoji_list=["🖼️"],
                 sticker=BufferedInputFile(bytes_image, ""),
@@ -81,7 +72,7 @@ async def add_emoji_to_pack(user_id, full_name, final_img):
     # Add sticker to existing pack
     if pack_was_created:  # Check pack is not deleted by user
         if await set_exists(pack_username):  # Pack was not touched
-            sticker_set = await bot.get_sticker_set(f"{pack_username}_by_{bot_username}")
+            sticker_set = await bot.get_sticker_set(f"{pack_username}_by_{await get_username()}")
             amount_of_stickers = len(sticker_set.stickers)
             if amount_of_stickers >= 200:
                 pack_username = await mysql_database.update_pack_name_in_db(user_id)
@@ -129,11 +120,11 @@ async def process_text(message: types.Message) -> None:
 
         await progress_message.delete()
         builder = InlineKeyboardBuilder()
-        builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_{bot_username}")
+        builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_{await get_username()}")
         await message.reply("<b>Emoji generated</b> ✅", reply_markup=builder.as_markup())
 
         print(f"[v] User {message.from_user.id} successfully generated {prompt} emoji. "
-              f"Link: https://t.me/addemoji/{pack_username}_by_{bot_username}")
+              f"Link: https://t.me/addemoji/{pack_username}_by_{await get_username()}")
 
     except Exception as e:
         await progress_message.delete()
@@ -178,20 +169,14 @@ async def remove_user_from_processing(user_id):
 # Function to check if sticker set already exists
 async def set_exists(sticker_set):
     try:
-        await bot.get_sticker_set(f"{sticker_set}_by_{bot_username}")
+        await bot.get_sticker_set(f"{sticker_set}_by_{await get_username()}")
         return True
     except Exception:  # The pack was deleted
         pass
         return False
 
-
-# Run bot
-async def main() -> None:
-    global bot_username
+# Remove user to processing queue
+async def get_username():
     info = await bot.get_me()
-    bot_username = info.username
-    await dp.start_polling(bot)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    username = info.username
+    return username

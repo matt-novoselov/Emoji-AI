@@ -1,12 +1,9 @@
-import os
+from app.config import DB_HOST, DB_PORT, DB_USERNAME, DB_NAME, DB_PASSWORD
 import asyncio
 import aiomysql
 from aiomysql import Error
-from dotenv import load_dotenv
 from Username_Generator import generator
 
-# Load secrets from environment
-load_dotenv()
 
 # - - - - - - - - - - #
 loop = asyncio.get_event_loop()
@@ -16,11 +13,11 @@ loop = asyncio.get_event_loop()
 async def connect_db():
     try:
         connection = await aiomysql.connect(
-            host=os.getenv("HOST"),
-            port=int(os.getenv("DB_PORT")),
-            user=os.getenv("DB_USERNAME"),
-            password=os.getenv("PASSWORD"),
-            db=os.getenv("DATABASE"),
+            host=DB_HOST,
+            port=int(DB_PORT),
+            user=DB_USERNAME,
+            password=DB_PASSWORD,
+            db=DB_NAME,
             loop=loop,
         )
 
