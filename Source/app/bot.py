@@ -150,13 +150,11 @@ async def process_text(message: types.Message) -> None:
         await progress_message.delete()
         builder = InlineKeyboardBuilder()
         builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_{await get_username()}")
-        success_message = Text(
-            CustomEmoji("🖼️", custom_emoji_id=custom_emoji_id),
-            " ",
-            Bold("Emoji generated!")
-        )
+        success_text_message = Text(Bold("Emoji generated!"))
+        emoji_message = Text(CustomEmoji("🖼️", custom_emoji_id=custom_emoji_id))
         try:
-            await message.reply(**success_message.as_kwargs(), reply_markup=builder.as_markup())
+            await message.reply(**success_text_message.as_kwargs(), reply_markup=builder.as_markup())
+            await message.reply(**emoji_message.as_kwargs())
         except Exception:
             await message.reply("<b>Emoji generated</b> ✅", reply_markup=builder.as_markup())
 
