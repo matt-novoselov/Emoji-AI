@@ -3,7 +3,6 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.types import BufferedInputFile, ContentType
 from aiogram.utils.formatting import Bold, CustomEmoji, Text
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from app.config import TELEGRAM_TOKEN
@@ -148,15 +147,13 @@ async def process_text(message: types.Message) -> None:
         )
 
         await progress_message.delete()
-        builder = InlineKeyboardBuilder()
-        builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_{await get_username()}")
         success_text_message = Text(Bold("Emoji generated!"))
         emoji_message = Text(CustomEmoji("🖼️", custom_emoji_id=custom_emoji_id))
         try:
-            await message.reply(**success_text_message.as_kwargs(), reply_markup=builder.as_markup())
+            await message.reply(**success_text_message.as_kwargs())
             await message.reply(**emoji_message.as_kwargs())
         except Exception:
-            await message.reply("<b>Emoji generated</b> ✅", reply_markup=builder.as_markup())
+            await message.reply("<b>Emoji generated</b> ✅")
 
         print(f"[v] User {message.from_user.id} successfully generated {prompt} emoji. "
               f"Link: https://t.me/addemoji/{pack_username}_by_{await get_username()}")
