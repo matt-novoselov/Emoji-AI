@@ -127,7 +127,12 @@ async def process_text(message: types.Message) -> None:
                              "You won't be able to use stickers that you create.")
 
     prompt = message.text
-    progress_message = await message.reply(f"🕐 We are processing your emoji of <b>{prompt}</b>")
+    processing_message = Text(
+        CustomEmoji("⏳", custom_emoji_id="5307981757063110606"),
+        " We are processing your emoji of ",
+        Bold(prompt),
+    )
+    progress_message = await message.reply(**processing_message.as_kwargs())
     try:
         await add_user_to_processing(message.from_user.id)
 
@@ -148,8 +153,7 @@ async def process_text(message: types.Message) -> None:
         success_message = Text(
             CustomEmoji("🖼️", custom_emoji_id=custom_emoji_id),
             " ",
-            Bold("Emoji generated"),
-            " ✅",
+            Bold("Emoji generated!")
         )
         try:
             await message.reply(**success_message.as_kwargs(), reply_markup=builder.as_markup())
