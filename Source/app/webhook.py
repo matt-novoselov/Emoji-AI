@@ -11,8 +11,9 @@ webhook_route = APIRouter()
 
 # Set up a webhook on Telegram server
 async def set_webhook():
-    webhook_info = await bot.get_webhook_info()
-    current_webhook_url = webhook_info.url
+    if not WEBHOOK_DOMAIN:
+        logging.warning("WEBHOOK_DOMAIN is not configured. Skipping webhook setup.")
+        return
 
     # Local variable to store the modified URL
     webhook_url = WEBHOOK_DOMAIN
@@ -25,14 +26,20 @@ async def set_webhook():
         else:
             webhook_url = "https://" + webhook_url
 
-    # Check if the webhook is already set to the desired domain
-    if current_webhook_url != webhook_url:
-        await bot.set_webhook(url=webhook_url,
-                              allowed_updates=dp.resolve_used_update_types(),
-                              drop_pending_updates=True)
-        logging.info(f"Webhook updated to: {webhook_url}")
-    else:
-        logging.info("Webhook is already correctly set.")
+    try:
+        webhook_info = await bot.get_webhook_info()
+        current_webhook_url = webhook_info.url
+
+        # Check if the webhook is already set to the desired domain
+        if current_webhook_url != webhook_url:
+            await bot.set_webhook(url=webhook_url,
+                                  allowed_updates=dp.resolve_used_update_types(),
+                                  drop_pending_updates=True)
+            logging.info(f"Webhook updated to: {webhook_url}")
+        else:
+            logging.info("Webhook is already correctly set.")
+    except Exception as e:
+        logging.warning(f"Unable to set webhook during startup: {e}")
 
 
 # Webhook processing

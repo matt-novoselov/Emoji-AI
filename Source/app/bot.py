@@ -2,7 +2,7 @@ import aiogram.methods
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.types import BufferedInputFile, ContentType
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.formatting import Bold, CustomEmoji, Text
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from app.config import TELEGRAM_TOKEN
@@ -38,13 +38,14 @@ async def create_new_pack_and_put_emoji(user_id, pack_link_from_database, full_n
             stickers=[
                 aiogram.types.input_sticker.InputSticker(
                     emoji_list=["🖼️"],
-                    sticker=BufferedInputFile(bytes_image, ""),
+                    sticker=BufferedInputFile(bytes_image, "emoji.png"),
                     format="static"
                 )
             ],
             sticker_format="static",
             sticker_type="custom_emoji",
         )
+        return await get_latest_custom_emoji_id(pack_link_from_database)
     except Exception as e:
         raise Exception(f"Error occurred while trying to create new pack and put an emoji: {e}")
 
@@ -58,16 +59,18 @@ async def add_new_emoji_to_pack(user_id, pack_link_from_database, bytes_image):
             name=f"{pack_link_from_database}_by_{await get_username()}",
             sticker=aiogram.types.input_sticker.InputSticker(
                 emoji_list=["🖼️"],
-                sticker=BufferedInputFile(bytes_image, ""),
+                sticker=BufferedInputFile(bytes_image, "emoji.png"),
                 format="static"
             ),
         )
+        return await get_latest_custom_emoji_id(pack_link_from_database)
     except Exception as e:
         raise Exception(f"Error occurred while trying to add new emoji to the pack: {e}")
 
 
-async def add_emoji_to_pack(user_id, full_name, final_img):
+async def add_emoji_to_pack(user_id, full_name, emoji_image_bytes):
     pack_username, pack_was_created = await mysql_database.return_pack_username_and_activated_status(user_id)
+    custom_emoji_id = ""
 
     # Add sticker to existing pack
     if pack_was_created:  # Check pack is not deleted by user
@@ -76,19 +79,35 @@ async def add_emoji_to_pack(user_id, full_name, final_img):
             amount_of_stickers = len(sticker_set.stickers)
             if amount_of_stickers >= 200:
                 pack_username = await mysql_database.update_pack_name_in_db(user_id)
-                await create_new_pack_and_put_emoji(user_id, pack_username,
-                                                    full_name,
-                                                    final_img.read())
+                custom_emoji_id = await create_new_pack_and_put_emoji(
+                    user_id,
+                    pack_username,
+                    full_name,
+                    emoji_image_bytes,
+                )
             else:
-                await add_new_emoji_to_pack(user_id, pack_username, final_img.read())
+                custom_emoji_id = await add_new_emoji_to_pack(
+                    user_id,
+                    pack_username,
+                    emoji_image_bytes,
+                )
         else:  # Pack was deleted
             pack_username = await mysql_database.update_pack_name_in_db(user_id)
-            await create_new_pack_and_put_emoji(user_id, pack_username, full_name,
-                                                final_img.read())
+            custom_emoji_id = await create_new_pack_and_put_emoji(
+                user_id,
+                pack_username,
+                full_name,
+                emoji_image_bytes,
+            )
     else:  # Create new pack and add first sticker
-        await create_new_pack_and_put_emoji(user_id, pack_username, full_name, final_img.read())
+        custom_emoji_id = await create_new_pack_and_put_emoji(
+            user_id,
+            pack_username,
+            full_name,
+            emoji_image_bytes,
+        )
 
-    return pack_username
+    return pack_username, custom_emoji_id
 
 
 # Message that is being sent if user tries to start processing new emoji until the previous one is done
@@ -107,21 +126,34 @@ async def process_text(message: types.Message) -> None:
                              "You won't be able to use stickers that you create.")
 
     prompt = message.text
-    progress_message = await message.reply(f"🕐 We are processing your emoji of <b>{prompt}</b>")
+    processing_message = Text(
+        CustomEmoji("⏳", custom_emoji_id="5307981757063110606"),
+        " We are processing your emoji of ",
+        Bold(prompt),
+    )
+    progress_message = await message.reply(**processing_message.as_kwargs())
     try:
         await add_user_to_processing(message.from_user.id)
 
         full_response = await EmojiAPI2.generate_emoji(prompt)
         no_background_url = await EmojiAPI2.remove_background(full_response)
         downloaded_image_bytes = await EmojiAPI2.download_image(no_background_url)
-        transformed_image_bytes = await EmojiAPI2.resize_image(downloaded_image_bytes)
-        pack_username = await add_emoji_to_pack(message.from_user.id, message.from_user.full_name,
-                                                transformed_image_bytes)
+        transformed_image_buffer = await EmojiAPI2.resize_image(downloaded_image_bytes)
+        transformed_image_bytes = transformed_image_buffer.getvalue()
+        pack_username, custom_emoji_id = await add_emoji_to_pack(
+            message.from_user.id,
+            message.from_user.full_name,
+            transformed_image_bytes,
+        )
 
         await progress_message.delete()
-        builder = InlineKeyboardBuilder()
-        builder.button(text=f"📂 Open emoji pack", url=f"https://t.me/addemoji/{pack_username}_by_{await get_username()}")
-        await message.reply("<b>Emoji generated</b> ✅", reply_markup=builder.as_markup())
+        success_text_message = Text(Bold("Emoji generated!"))
+        emoji_message = Text(CustomEmoji("🖼️", custom_emoji_id=custom_emoji_id))
+        try:
+            await message.reply(**success_text_message.as_kwargs())
+            await message.reply(**emoji_message.as_kwargs())
+        except Exception:
+            await message.reply("<b>Emoji generated</b> ✅")
 
         print(f"[v] User {message.from_user.id} successfully generated {prompt} emoji. "
               f"Link: https://t.me/addemoji/{pack_username}_by_{await get_username()}")
@@ -174,6 +206,22 @@ async def set_exists(sticker_set):
     except Exception:  # The pack was deleted
         pass
         return False
+
+
+async def get_latest_custom_emoji_id(sticker_set):
+    try:
+        full_sticker_set = await bot.get_sticker_set(f"{sticker_set}_by_{await get_username()}")
+        if not full_sticker_set.stickers:
+            raise Exception("Sticker set is empty")
+
+        custom_emoji_id = full_sticker_set.stickers[-1].custom_emoji_id
+        if not custom_emoji_id:
+            raise Exception("Latest sticker does not have custom_emoji_id")
+
+        return custom_emoji_id
+    except Exception as e:
+        raise Exception(f"Error occurred while trying to retrieve custom emoji id: {e}")
+
 
 # Remove user to processing queue
 async def get_username():

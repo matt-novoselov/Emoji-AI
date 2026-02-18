@@ -5,12 +5,32 @@ from aiomysql import Error
 from app.Username_Generator import generator
 
 
-# - - - - - - - - - - #
-loop = asyncio.get_event_loop()
+mydb = None
+connection_lock = asyncio.Lock()
+
+
+def validate_db_settings():
+    missing_settings = []
+
+    if not DB_HOST:
+        missing_settings.append("DB_HOST")
+    if not DB_PORT:
+        missing_settings.append("DB_PORT")
+    if not DB_USERNAME:
+        missing_settings.append("DB_USERNAME")
+    if not DB_NAME:
+        missing_settings.append("DB_NAME")
+    if DB_PASSWORD is None:
+        missing_settings.append("DB_PASSWORD")
+
+    if missing_settings:
+        missing_list = ", ".join(missing_settings)
+        raise RuntimeError(f"Missing database settings: {missing_list}")
 
 
 # Function to connect to the database with credentials
 async def connect_db():
+    validate_db_settings()
     try:
         connection = await aiomysql.connect(
             host=DB_HOST,
@@ -18,31 +38,37 @@ async def connect_db():
             user=DB_USERNAME,
             password=DB_PASSWORD,
             db=DB_NAME,
-            loop=loop,
         )
-
-        if connection:
-            return connection
-        else:
-            raise Exception("Database is not connected")
+        return connection
 
     except Error as e:
-        print(f'[!] There was an error in connecting to MySQL Server: {e}')
+        raise RuntimeError(f"There was an error in connecting to MySQL Server: {e}") from e
+
+
+async def get_connection():
+    global mydb
+    if mydb is not None and not mydb.closed:
+        try:
+            await mydb.ping(reconnect=True)
+            return mydb
+        except Error:
+            mydb = None
+
+    async with connection_lock:
+        if mydb is None or mydb.closed:
+            mydb = await connect_db()
+        else:
+            try:
+                await mydb.ping(reconnect=True)
+            except Error:
+                mydb = await connect_db()
+    return mydb
 
 
 # Function to get database cursor
 async def get_cursor():
-    global mydb
-    try:
-        await mydb.ping(reconnect=True)
-    except Error:
-        mydb = loop.run_until_complete(connect_db())
-    return mydb.cursor()
-
-
-mydb = loop.run_until_complete(connect_db())
-
-# - - - - - - - - - - #
+    connection = await get_connection()
+    return connection.cursor()
 
 
 # Function to get username and status by Telegram user id
@@ -64,8 +90,7 @@ async def return_pack_username_and_activated_status(user_id):
                 return username, user_exist
 
         except Error as e:
-            print(f'[!] There was an error in getting cursor: {e}')
-            pass
+            raise RuntimeError(f"There was an error in getting cursor: {e}") from e
 
 
 # Add Telegram User ID and created pack link to the database
@@ -77,11 +102,11 @@ async def push_uid_and_pack_name_to_db(user_id, ):
             query = "insert into EmojiAI (TelegramUserID, sticker_set_link) values (%s, %s)"
             data_query = (user_id, random_packname)
             await cur.execute(query, data_query)
-            await mydb.commit()
+            connection = await get_connection()
+            await connection.commit()
             return random_packname
         except Error as e:
-            print(f'[!] There was an error in getting cursor: {e}')
-            pass
+            raise RuntimeError(f"There was an error in getting cursor: {e}") from e
 
 
 # Get pack name by Telegram User ID
@@ -93,8 +118,7 @@ async def return_pack_name_by_uid(user_id):
             await cur.execute(query, data_query)
             return (await cur.fetchall())[0][0]
         except Error as e:
-            print(f'[!] There was an error in getting cursor: {e}')
-            pass
+            raise RuntimeError(f"There was an error in getting cursor: {e}") from e
 
 
 # Update pack name by Telegram User ID
@@ -106,13 +130,13 @@ async def update_pack_name_in_db(user_id):
             query = "UPDATE EmojiAI SET sticker_set_link = %s WHERE TelegramUserID = %s"
             data_query = (random_packname, user_id)
             await cur.execute(query, data_query)
-            await mydb.commit()
+            connection = await get_connection()
+            await connection.commit()
             print(f"[x] Had to update a sticker set link for user {user_id}. The old sticker pack was likely deleted")
 
             return random_packname
         except Error as e:
-            print(f'[!] There was an error in getting cursor: {e}')
-            pass
+            raise RuntimeError(f"There was an error in getting cursor: {e}") from e
 
 
 # Generate new pack name
